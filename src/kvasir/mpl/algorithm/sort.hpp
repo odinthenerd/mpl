@@ -10,6 +10,7 @@
 #include "../sequence/push_front.hpp"
 #include "../types/bool.hpp"
 #include "../types/nothing.hpp"
+#include "../utility/conditional.hpp"
 
 namespace kvasir {
 	namespace mpl {
@@ -358,6 +359,14 @@ namespace kvasir {
 					using right = list<>;
 				};
 
+				template<template <typename...> class F, typename T, typename U>
+				struct small_merge_impl;
+				template<template <typename...> class F, typename T, typename...Ts, typename U, typename...Us>
+				struct small_merge_impl<F, list<T, Ts...>, list<U, Us...>> {
+					using sub = merge_insert<F<T, U>::value, list<>, list<T, Ts...>, list<U, Us...>, F>;
+					using type = typename detail::join_impl<list, typename sub::out, typename sub::left, typename sub::right, list<>>::type;
+				};
+
 				template<bool>
 				struct enough {
 					template<typename...Ts>
@@ -418,6 +427,9 @@ namespace kvasir {
 					using type = list<>;
 				};
 
+				template <class L1, class L2, template <typename...> class F>
+				using small_merge = typename small_merge_impl<F,L1,L2>::type;
+
 				template <class Seq1, class Seq2, template <typename...> class F>
 				using merge = call<join<listify>,typename rmerge<F,list<>, list<>,Seq1,list<>, Seq2>::type>;
 
@@ -427,21 +439,21 @@ namespace kvasir {
 						typename T15>
 				using sort16 = merge<
 				        merge<
-				                merge<
+					small_merge<
 				                        typename mpl::conditional<F<T0, T1>::value>::template f<list<T0, T1>, list<T1, T0>>,
 										typename mpl::conditional<F<T2, T3>::value>::template f<list<T2, T3>, list<T3, T2>>,
 				                        F>,
-				                merge<
+					small_merge<
 				                        typename mpl::conditional<F<T4, T5>::value>::template f<list<T4, T5>, list<T5, T4>>,
 				                        typename mpl::conditional<F<T6, T7>::value>::template f<list<T6, T7>, list<T7, T6>>,
 				                        F>,
 				                F>,
 				        merge<
-				                merge<
+					small_merge<
 				                        typename mpl::conditional<F<T8, T9>::value>::template f<list<T8, T9>, list<T9, T8>>,
 				                        typename mpl::conditional<F<T10, T11>::value>::template f<list<T10, T11>, list<T11, T10>>,
 				                        F>,
-				                merge<
+					small_merge<
 				                        typename mpl::conditional<F<T12, T13>::value>::template f<list<T12, T13>, list<T13, T12>>,
 				                        typename mpl::conditional<F<T14, T15>::value>::template f<list<T14, T15>, list<T15, T14>>,
 				                        F>,
@@ -453,12 +465,12 @@ namespace kvasir {
 
 				template <template <typename...> class F, typename T>
 				struct recursive_merge;
-				template <template <typename...> class F, typename...T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename U>
-				struct recursive_merge<F, rlist<list<T0...>, rlist<T1, rlist<T2, rlist<T3, rlist<T4, rlist<T5, rlist<T6, rlist<T7, U>>>>>>>>> {
+				template <template <typename...> class F, typename T, typename...T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename U>
+				struct recursive_merge<F, rlist<list<T,T0...>, rlist<T1, rlist<T2, rlist<T3, rlist<T4, rlist<T5, rlist<T6, rlist<T7, U>>>>>>>>> {
 					using type = merge<
 						merge<
 						merge<
-						merge<list<T0...>, T1, F>,
+						merge<list<T,T0...>, T1, F>,
 						merge<T2, T3, F>,
 						F>,
 						merge<
