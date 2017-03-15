@@ -59,9 +59,9 @@ namespace kvasir {
 				                         list<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>,
 				                         list<U0, U1, U2, U3, U4, U5, U6, U7, U8, U9>, Comp>;
 				using type = typename merge_impl<
-				        typename c::join<c::listify>::template f<list<R...>, typename sub::out>,
-				        typename c::join<c::listify>::template f<typename sub::left, list<Ts...>>,
-				        typename c::join<c::listify>::template f<typename sub::right, list<Us...>>,
+				        typename c::detail::join_2_impl<list, list<R...>, typename sub::out>::type,
+				        typename c::detail::join_2_impl<list, typename sub::left, list<Ts...>>::type,
+				        typename c::detail::join_2_impl<list, typename sub::right, list<Us...>>::type,
 				        Comp>::type;
 			};
 
@@ -328,133 +328,324 @@ namespace kvasir {
 
 		namespace c {
 			namespace detail {
-				template <template <typename...> class F, typename T0, typename T1, typename T2,
-				          typename T3, typename T4, typename T5, typename T6, typename T7,
-				          typename T8, typename T9, typename T10, typename T11, typename T12,
-				          typename T13, typename T14, typename T15>
-				using sort16 = mpl::detail::merge<
-				        mpl::detail::merge<
-				                mpl::detail::merge<
-				                        typename std::conditional<F<T0, T1>::value, list<T0, T1>,
-				                                                  list<T1, T0>>::type,
-				                        typename std::conditional<F<T2, T3>::value, list<T2, T3>,
-				                                                  list<T3, T2>>::type,
+
+				template <bool, class L, class Seq1, class Seq2, template <typename...> class Comp>
+				struct merge_insert;
+
+				template <class... R, class T0, class T1, class... Ts, class U, class... Us,
+					template <typename...> class Comp>
+				struct merge_insert<true, list<R...>, list<T0, T1, Ts...>, list<U, Us...>, Comp>
+					: merge_insert<Comp<T1, U>::value, list<R..., T0>, list<T1, Ts...>,
+					list<U, Us...>, Comp> {};
+
+				template <class... R, class T, class U, class... Us, template <typename...> class Comp>
+				struct merge_insert<true, list<R...>, list<T>, list<U, Us...>, Comp> {
+					using out = list<R..., T>;
+					using left = list<>;
+					using right = list<U, Us...>;
+				};
+
+				template <class... R, class T, class... Ts, class U0, class U1, class... Us,
+					template <typename...> class Comp>
+				struct merge_insert<false, list<R...>, list<T, Ts...>, list<U0, U1, Us...>, Comp>
+					: merge_insert<Comp<T, U1>::value, list<R..., U0>, list<T, Ts...>,
+					list<U1, Us...>, Comp> {};
+
+				template <class... R, class T, class... Ts, class U, template <typename...> class Comp>
+				struct merge_insert<false, list<R...>, list<T, Ts...>, list<U>, Comp> {
+					using out = list<R..., U>;
+					using left = list<T, Ts...>;
+					using right = list<>;
+				};
+
+				template<bool>
+				struct enough {
+					template<typename...Ts>
+					using first = list<Ts...>;
+					template<typename...Ts>
+					using second = list<>;
+				};
+				template<>
+				struct enough<true> {
+					template<typename T0, typename T1, typename T2, typename T3, typename T4,
+						typename T5, typename T6, typename T7, typename T8, typename T9,
+						typename T10, typename T11, typename T12, typename T13, typename T14,
+						typename T15, typename...Ts>
+					using first = list< T0, T1, T2, T3, T4,
+						T5, T6, T7, T8, T9,
+						T10, T11, T12, T13, T14,
+						T15>;
+					template<typename T0, typename T1, typename T2, typename T3, typename T4,
+						typename T5, typename T6, typename T7, typename T8, typename T9,
+						typename T10, typename T11, typename T12, typename T13, typename T14,
+						typename T15, typename...Ts>
+					using second = list<Ts...>;
+				};
+
+				template<template <typename...> class F, typename Out, typename L1, typename L2, typename R1, typename R2>
+				struct rmerge;
+				//initial step
+				template<template <typename...> class F, typename...O, typename L, typename...L2, typename R, typename...R2>
+				struct rmerge<F, list<O...>, list<>, list<L, L2...>, list<>, list<R, R2...>> {
+					using sub = merge_insert<F<L, R>::value, list<>, typename enough<(sizeof...(L2) > 15)>::template first<L, L2...>, typename enough<(sizeof...(L2) > 15)>::template first<R, R2...>,F>;
+					using type = typename rmerge<F, list<O..., typename sub::out>, typename sub::left, typename enough<(sizeof...(L2) > 15)>::template second<L, L2...>, typename sub::right, typename enough<(sizeof...(R2) > 15)>::template second<R, R2...>>::type;
+				};
+				//right sub is empty
+				template<template <typename...> class F, typename...O, typename L, typename...L1, typename...L2, typename R, typename...R2>
+				struct rmerge<F, list<O...>, list<L,L1...>, list<L2...>, list<>, list<R,R2...>> {
+					using sub = merge_insert<F<L, R>::value, list<>, typename enough<((sizeof...(L1) + sizeof...(L2) )> 15)>::template first<L, L1..., L2...>, typename enough<(sizeof...(R2) > 15)>::template first<R, R2...>, F>;
+					using type = typename rmerge<F, list<O..., typename sub::out>, typename sub::left, typename enough<((sizeof...(L1)+sizeof...(L2)) > 15)>::template second<L, L1..., L2...>, typename sub::right, typename enough<(sizeof...(R2) > 15)>::template second<R, R2...>>::type;
+				};
+				//left sub is empty
+				template<template <typename...> class F, typename...O, typename L, typename...L2, typename R, typename...R1, typename...R2>
+				struct rmerge<F, list<O...>, list<>, list<L,L2...>, list<R,R1...>, list<R2...>> {
+					using sub = merge_insert<F<L, R>::value, list<>, typename enough<(sizeof...(L2) > 15)>::template first<L, L2...>, typename enough<(sizeof...(R1) + sizeof...(R2) > 15)>::template first<R, R1..., R2...>, F>;
+					using type = typename rmerge<F, list<O..., typename sub::out>, typename sub::left, typename enough<(sizeof...(L2) > 15)>::template second<L, L2...>, typename sub::right, typename enough<(sizeof...(R1)+sizeof...(R2) > 15)>::template second<R, R1..., R2...>>::type;
+				};
+				//no more left
+				template<template <typename...> class F, typename...O, typename...R1, typename...R2>
+				struct rmerge<F, list<O...>, list<>, list<>, list<R1...>, list<R2...>> {
+					using type = list<O..., list<R1..., R2...>>;
+				};
+				//no more right
+				template<template <typename...> class F, typename...O, typename...L1, typename...L2>
+				struct rmerge<F, list<O...>, list<L1...>, list<L2...>, list<>, list<>> {
+					using type = list<O...,list<L1..., L2...>>;
+				};
+				//nothing
+				template<template <typename...> class F>
+				struct rmerge<F, list<>, list<>, list<>, list<>, list<>> {
+					using type = list<>;
+				};
+
+				template <class Seq1, class Seq2, template <typename...> class F>
+				using merge = call<join<listify>,typename rmerge<F,list<>, list<>,Seq1,list<>, Seq2>::type>;
+
+				template <template <typename...> class F, typename T0, typename T1, typename T2, typename T3, typename T4,
+						typename T5, typename T6, typename T7, typename T8, typename T9,
+						typename T10, typename T11, typename T12, typename T13, typename T14,
+						typename T15>
+				using sort16 = merge<
+				        merge<
+				                merge<
+				                        typename mpl::conditional<F<T0, T1>::value>::template f<list<T0, T1>, list<T1, T0>>,
+										typename mpl::conditional<F<T2, T3>::value>::template f<list<T2, T3>, list<T3, T2>>,
 				                        F>,
-				                mpl::detail::merge<
-				                        typename std::conditional<F<T4, T5>::value, list<T4, T5>,
-				                                                  list<T5, T4>>::type,
-				                        typename std::conditional<F<T6, T7>::value, list<T6, T7>,
-				                                                  list<T7, T6>>::type,
+				                merge<
+				                        typename mpl::conditional<F<T4, T5>::value>::template f<list<T4, T5>, list<T5, T4>>,
+				                        typename mpl::conditional<F<T6, T7>::value>::template f<list<T6, T7>, list<T7, T6>>,
 				                        F>,
 				                F>,
-				        mpl::detail::merge<
-				                mpl::detail::merge<
-				                        typename std::conditional<F<T8, T9>::value, list<T8, T9>,
-				                                                  list<T9, T8>>::type,
-				                        typename std::conditional<F<T10, T11>::value,
-				                                                  list<T10, T11>,
-				                                                  list<T11, T10>>::type,
+				        merge<
+				                merge<
+				                        typename mpl::conditional<F<T8, T9>::value>::template f<list<T8, T9>, list<T9, T8>>,
+				                        typename mpl::conditional<F<T10, T11>::value>::template f<list<T10, T11>, list<T11, T10>>,
 				                        F>,
-				                mpl::detail::merge<
-				                        typename std::conditional<F<T2, T13>::value, list<T12, T13>,
-				                                                  list<T13, T12>>::type,
-				                        typename std::conditional<F<T14, T15>::value,
-				                                                  list<T14, T15>,
-				                                                  list<T15, T14>>::type,
+				                merge<
+				                        typename mpl::conditional<F<T12, T13>::value>::template f<list<T12, T13>, list<T13, T12>>,
+				                        typename mpl::conditional<F<T14, T15>::value>::template f<list<T14, T15>, list<T15, T14>>,
 				                        F>,
 				                F>,
 				        F>;
+
+				template <template <typename...> class F, typename T0, typename T1, typename T2, typename T3>
+				using merge4 = merge<merge<T0, T1, F>, merge<T2, T3, F>, F>;
+
+				template <template <typename...> class F, typename T>
+				struct recursive_merge;
+				template <template <typename...> class F, typename...T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename U>
+				struct recursive_merge<F, rlist<list<T0...>, rlist<T1, rlist<T2, rlist<T3, rlist<T4, rlist<T5, rlist<T6, rlist<T7, U>>>>>>>>> {
+					using type = merge<
+						merge<
+						merge<
+						merge<list<T0...>, T1, F>,
+						merge<T2, T3, F>,
+						F>,
+						merge<
+						merge<T4, T5, F>,
+						merge<T6, T7, F>,
+						F>,
+						F
+						>,
+						typename recursive_merge<F, U>::type,
+						F>;
+				};
+				template <template <typename...> class F, typename U>
+				struct recursive_merge<F, rlist<list<>, U>> {
+					using type = list<>;
+				};
+
 				constexpr unsigned select_sort_loop(const unsigned in) {
-					return /*in >= 256 ? 256 :*/ in >= 64 ? 64 : in >= 16 ? 16 : in >= 4 ?
-					                                                        4 :
-					                                                        in >= 1 ? 1 : 0;
+					return in >= 256 ? 256 : in >= 64 ? 64 : in >= 16 ? 16 : in >= 4 ? 4 : in >= 1 ? 1 : 0;
 				}
 				template <unsigned I, template <typename...> class F>
 				struct sort_loop;
 				template <template <typename...> class F>
 				struct sort_loop<0, F> {
-					template <typename... Ts>
-					using f = rlist_tail_of8;
+					template <typename Out>
+					using f = Out;
 				};
 				template <template <typename...> class F>
 				struct sort_loop<1, F> {
-					template <typename T>
-					using f = rlist<list<T>, rlist_tail_of8>;
+					template <typename Out, typename T, typename...Ts>
+					using f =
+						typename sort_loop<select_sort_loop(sizeof...(Ts)),
+						F>::template f<rlist<list<T>, 
+						Out>,Ts...>;
 				};
 				template <template <typename...> class F>
 				struct sort_loop<4, F> {
-					template <typename T0, typename T1, typename T2, typename T3, typename... Ts>
+					template <typename Out,typename T0, typename T1, typename T2, typename T3, typename... Ts>
 					using f =
-					        rlist<mpl::detail::merge<
+						typename sort_loop<select_sort_loop(sizeof...(Ts)),
+						F>::template f<
+					        rlist<merge<
 					                      typename std::conditional<F<T0, T1>::value, list<T0, T1>,
 					                                                list<T1, T0>>::type,
 					                      typename std::conditional<F<T2, T3>::value, list<T2, T3>,
 					                                                list<T3, T2>>::type,
 					                      F>,
-					              typename sort_loop<select_sort_loop(sizeof...(Ts)),
-					                                 F>::template f<Ts...>>;
+					              Out>,Ts...>;
 				};
 				template <template <typename...> class F>
 				struct sort_loop<16, F> {
-					template <typename T0, typename T1, typename T2, typename T3, typename T4,
+					template <typename Out, typename T0, typename T1, typename T2, typename T3, typename T4,
 					          typename T5, typename T6, typename T7, typename T8, typename T9,
 					          typename T10, typename T11, typename T12, typename T13, typename T14,
 					          typename T15, typename... Ts>
-					using f = rlist<sort16<F, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12,
+					using f =
+						typename sort_loop<select_sort_loop(sizeof...(Ts)),
+						F>::template f<rlist<sort16<F, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12,
 					                       T13, T14, T15>,
-					                typename sort_loop<select_sort_loop(sizeof...(Ts)),
-					                                   F>::template f<Ts...>>;
+						Out>,Ts...>;
 				};
 				template <template <typename...> class F>
 				struct sort_loop<64, F> {
-					template <typename T0, typename T1, typename T2, typename T3, typename T4,
-					          typename T5, typename T6, typename T7, typename T8, typename T9,
-					          typename T10, typename T11, typename T12, typename T13, typename T14,
-					          typename T15, typename T16, typename T17, typename T18, typename T19,
-					          typename T20, typename T21, typename T22, typename T23, typename T24,
-					          typename T25, typename T26, typename T27, typename T28, typename T29,
-					          typename T30, typename T31, typename T32, typename T33, typename T34,
-					          typename T35, typename T36, typename T37, typename T38, typename T39,
-					          typename T40, typename T41, typename T42, typename T43, typename T44,
-					          typename T45, typename T46, typename T47, typename T48, typename T49,
-					          typename T50, typename T51, typename T52, typename T53, typename T54,
-					          typename T55, typename T56, typename T57, typename T58, typename T59,
-					          typename T60, typename T61, typename T62, typename T63,
-					          typename... Ts>
-					using f =
-					        rlist<mpl::detail::merge<
-					                      mpl::detail::merge<
-					                              sort16<F, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9,
-					                                     T10, T11, T12, T13, T14, T15>,
-					                              sort16<F, T16, T17, T18, T19, T20, T21, T22, T23,
-					                                     T24, T25, T26, T27, T28, T29, T30, T31>,
-					                              F>,
-					                      mpl::detail::merge<
-					                              sort16<F, T32, T33, T34, T35, T36, T37, T38, T39,
-					                                     T40, T41, T42, T43, T44, T45, T46, T47>,
-					                              sort16<F, T48, T49, T50, T51, T52, T53, T54, T55,
-					                                     T56, T57, T58, T59, T60, T61, T62, T63>,
-					                              F>,
-					                      F>,
-					              typename sort_loop<select_sort_loop(sizeof...(Ts)),
-					                                 F>::template f<Ts...>>;
+					template <typename Out, typename T0, typename T1, typename T2, typename T3, typename T4,
+						typename T5, typename T6, typename T7, typename T8, typename T9,
+						typename T10, typename T11, typename T12, typename T13, typename T14,
+						typename T15, typename T16, typename T17, typename T18, typename T19,
+						typename T20, typename T21, typename T22, typename T23, typename T24,
+						typename T25, typename T26, typename T27, typename T28, typename T29,
+						typename T30, typename T31, typename T32, typename T33, typename T34,
+						typename T35, typename T36, typename T37, typename T38, typename T39,
+						typename T40, typename T41, typename T42, typename T43, typename T44,
+						typename T45, typename T46, typename T47, typename T48, typename T49,
+						typename T50, typename T51, typename T52, typename T53, typename T54,
+						typename T55, typename T56, typename T57, typename T58, typename T59,
+						typename T60, typename T61, typename T62, typename T63,
+						typename... Ts>
+						using f = typename sort_loop<select_sort_loop(sizeof...(Ts)), F>::template f<rlist<merge4<F,
+						sort16<F, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>,
+						sort16<F, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31>,
+						sort16<F, T32, T33, T34, T35, T36, T37, T38, T39, T40, T41, T42, T43, T44, T45, T46, T47>,
+						sort16<F, T48, T49, T50, T51, T52, T53, T54, T55, T56, T57, T58, T59, T60, T61, T62, T63>
+						>,
+						Out>,
+						Ts...>;
 				};
-				template <template <typename...> class F, typename T>
-				struct recursive_merge;
-				template <template <typename...> class F, typename T, typename U>
-				struct recursive_merge<F, rlist<T, U>> {
-					using type = mpl::detail::merge<T, typename recursive_merge<F, U>::type, F>;
+				template <template <typename...> class F>
+				struct sort_loop<256, F> {
+					template <typename Out, typename T0, typename T1,
+						typename T2, typename T3, typename T4, typename T5,
+						typename T6, typename T7, typename T8, typename T9,
+						typename T10, typename T11, typename T12, typename T13,
+						typename T14, typename T15, typename T16, typename T17,
+						typename T18, typename T19, typename T20, typename T21,
+						typename T22, typename T23, typename T24, typename T25,
+						typename T26, typename T27, typename T28, typename T29,
+						typename T30, typename T31, typename T32, typename T33,
+						typename T34, typename T35, typename T36, typename T37,
+						typename T38, typename T39, typename T40, typename T41,
+						typename T42, typename T43, typename T44, typename T45,
+						typename T46, typename T47, typename T48, typename T49,
+						typename T50, typename T51, typename T52, typename T53,
+						typename T54, typename T55, typename T56, typename T57,
+						typename T58, typename T59, typename T60, typename T61,
+						typename T62, typename T63, typename T64, typename T65,
+						typename T66, typename T67, typename T68, typename T69,
+						typename T70, typename T71, typename T72, typename T73,
+						typename T74, typename T75, typename T76, typename T77,
+						typename T78, typename T79, typename T80, typename T81,
+						typename T82, typename T83, typename T84, typename T85,
+						typename T86, typename T87, typename T88, typename T89,
+						typename T90, typename T91, typename T92, typename T93,
+						typename T94, typename T95, typename T96, typename T97,
+						typename T98, typename T99, typename T100, typename T101,
+						typename T102, typename T103, typename T104, typename T105,
+						typename T106, typename T107, typename T108, typename T109,
+						typename T110, typename T111, typename T112, typename T113,
+						typename T114, typename T115, typename T116, typename T117,
+						typename T118, typename T119, typename T120, typename T121,
+						typename T122, typename T123, typename T124, typename T125,
+						typename T126, typename T127, typename T128, typename T129,
+						typename T130, typename T131, typename T132, typename T133,
+						typename T134, typename T135, typename T136, typename T137,
+						typename T138, typename T139, typename T140, typename T141,
+						typename T142, typename T143, typename T144, typename T145,
+						typename T146, typename T147, typename T148, typename T149,
+						typename T150, typename T151, typename T152, typename T153,
+						typename T154, typename T155, typename T156, typename T157,
+						typename T158, typename T159, typename T160, typename T161,
+						typename T162, typename T163, typename T164, typename T165,
+						typename T166, typename T167, typename T168, typename T169,
+						typename T170, typename T171, typename T172, typename T173,
+						typename T174, typename T175, typename T176, typename T177,
+						typename T178, typename T179, typename T180, typename T181,
+						typename T182, typename T183, typename T184, typename T185,
+						typename T186, typename T187, typename T188, typename T189,
+						typename T190, typename T191, typename T192, typename T193,
+						typename T194, typename T195, typename T196, typename T197,
+						typename T198, typename T199, typename T200, typename T201,
+						typename T202, typename T203, typename T204, typename T205,
+						typename T206, typename T207, typename T208, typename T209,
+						typename T210, typename T211, typename T212, typename T213,
+						typename T214, typename T215, typename T216, typename T217,
+						typename T218, typename T219, typename T220, typename T221,
+						typename T222, typename T223, typename T224, typename T225,
+						typename T226, typename T227, typename T228, typename T229,
+						typename T230, typename T231, typename T232, typename T233,
+						typename T234, typename T235, typename T236, typename T237,
+						typename T238, typename T239, typename T240, typename T241,
+						typename T242, typename T243, typename T244, typename T245,
+						typename T246, typename T247, typename T248, typename T249,
+						typename T250, typename T251, typename T252, typename T253,
+						typename T254, typename T255,	typename... Ts>
+
+						using f = typename sort_loop<select_sort_loop(sizeof...(Ts)), F>::template f<
+						rlist< merge4<F,
+						merge4<F,
+						sort16<F, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>,
+						sort16<F, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31>,
+						sort16<F, T32, T33, T34, T35, T36, T37, T38, T39, T40, T41, T42, T43, T44, T45, T46, T47>,
+						sort16<F, T48, T49, T50, T51, T52, T53, T54, T55, T56, T57, T58, T59, T60, T61, T62, T63>>,
+						
+						merge4<F, 
+						sort16<F, T64, T65, T66, T67, T68, T69, T70, T71, T72, T73, T74, T75, T76, T77, T78, T79>,
+						sort16<F, T80, T81, T82, T83, T84, T85, T86, T87, T88, T89, T90, T91, T92, T93, T94, T95>,
+						sort16<F, T96, T97, T98, T99, T100, T101, T102, T103, T104, T105, T106, T107, T108, T109, T110, T111>,
+						sort16<F, T112, T113, T114, T115, T116, T117, T118, T119, T120, T121, T122, T123, T124, T125, T126, T127>>,
+						
+						merge4<F, 
+						sort16<F, T128, T129, T130, T131, T132, T133, T134, T135, T136, T137, T138, T139, T140, T141, T142, T143>,
+						sort16<F, T144, T145, T146, T147, T148, T149, T150, T151, T152, T153, T154, T155, T156, T157, T158, T159>,
+						sort16<F, T160, T161, T162, T163, T164, T165, T166, T167, T168, T169, T170, T171, T172, T173, T174, T175>,
+						sort16<F, T176, T177, T178, T179, T180, T181, T182, T183, T184, T185, T186, T187, T188, T189, T190, T191>>,
+						
+						merge4<F, 
+						sort16<F, T192, T193, T194, T195, T196, T197, T198, T199, T200, T201, T202, T203, T204, T205, T206, T207>,
+						sort16<F, T208, T209, T210, T211, T212, T213, T214, T215, T216, T217, T218, T219, T220, T221, T222, T223>,
+						sort16<F, T224, T225, T226, T227, T228, T229, T230, T231, T232, T233, T234, T235, T236, T237, T238, T239>,
+						sort16<F, T240, T241, T242, T243, T244, T245, T246, T247, T248, T249, T250, T251, T252, T253, T254, T255>>>,
+						Out>,Ts...>;
 				};
-				template <template <typename...> class F, typename T, typename U>
-				struct recursive_merge<F, rlist<T, rlist<list<>, U>>> {
-					using type = T;
-				};
+
 			}
 			template <template <typename...> class F>
 			struct sort {
 				template <typename... Ts>
 				using f = typename detail::sort_loop<detail::select_sort_loop(sizeof...(Ts)),
-				                                     F>::template f<Ts...>;
+				                                     F>::template f<detail::rlist_tail_of8,Ts...>;
 			};
 		}
 
@@ -462,6 +653,9 @@ namespace kvasir {
 			template <typename T1, typename T2>
 			using less = bool_<(T1::value < T2::value)>;
 		}
+
+		template <typename List, template <typename...> class Comp = detail::less>
+		using old_sort = typename detail::sort_impl<list<>, List, Comp>::type;
 
 		template <typename List, template <typename...> class Comp = detail::less>
 		using sort = typename c::detail::recursive_merge<Comp, c::call<c::sort<Comp>, List>>::type;
