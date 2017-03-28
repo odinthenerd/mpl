@@ -9,6 +9,7 @@
 #include "../functional/call.hpp"
 #include "../functional/identity.hpp"
 #include "../types/bool.hpp"
+#include <initializer_list>
 
 namespace kvasir {
 	namespace mpl {
@@ -35,9 +36,31 @@ namespace kvasir {
 					};
 				};
 			}
+#if defined(KVASIR_CONSTEXPR_14)
+			namespace detail{
+				constexpr int and_(std::initializer_list<bool> l) {
+					bool out = true;
+					for (auto i : l) {
+						out = out && i;
+					}
+					return out;
+				}
+			}
+			template<typename F>
+			struct all {
+				template<typename...Ts>
+				using f = bool_<detail::and_({ static_cast<bool>(conditional<(sizeof...(Ts)<100000)>::template f<F, void>::template f<Ts>::value)... })>;
+			};
+			template <template <typename...> class F>
+			struct all<cfe<F, identity>> {
+				template<typename...Ts>
+				using f = bool_<detail::and_({ static_cast<bool>(F<Ts>::value)... })>;
+			};
 
+#else
 			template <typename F>
 			using all = find_if<detail::not_<F>, detail::nothing_found>;
+#endif
 		}
 
 		/// resolves to std::true_type if all elements in the input list
