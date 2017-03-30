@@ -5,7 +5,7 @@
 #pragma once
 
 #if defined(__cplusplus)
-#  if __cplusplus == 201402L
+#  if __cplusplus >= 201402L
 #    define KVASIR_CONSTEXPR_14
 #  endif
 #endif
