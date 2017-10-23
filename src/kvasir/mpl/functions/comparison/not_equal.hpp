@@ -9,6 +9,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief returns `ture_` if the ::value of the inputs are not equal
 		template <typename C = identity>
 		struct not_equal {
 			template <typename A, typename B>

@@ -6,6 +6,7 @@
 #include "../functional/bind.hpp"
 namespace kvasir {
 	namespace mpl {
+		/// \brief universal list tspe
 		template <typename... Ts>
 		struct list {};
 		namespace detail {
@@ -21,10 +22,14 @@ namespace kvasir {
 			                          rlist<list<>,
 			                                rlist<list<>, rlist<list<>, rlist<list<>, void>>>>>>>>;
 		} // namespace detail
+
+		/// \brief continuation which returns its input pack wrapped in a list
 		using listify = cfe<list>;
 
+		/// \exclude
 		template <typename S>
 		struct sequencify;
+		/// \exclude 
 		template <template <typename...> class S, typename... Ts>
 		struct sequencify<S<Ts...>> {
 			using type = cfe<S>;

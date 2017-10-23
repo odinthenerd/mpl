@@ -9,6 +9,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief results in `true_` if the ::value of the first input parameter is liss than the second
 		template <typename C = identity>
 		struct less_than {
 			template <typename A, typename B>

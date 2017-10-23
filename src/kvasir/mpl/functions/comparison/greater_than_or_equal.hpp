@@ -9,6 +9,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief returns `true_` if the ::value of the first parameter is greater than or equal to the second
 		template <typename C = identity>
 		struct greater_than_or_equal {
 			template <typename A, typename B>

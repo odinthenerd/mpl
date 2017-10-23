@@ -18,6 +18,7 @@ namespace kvasir {
 			template <typename T, typename U>
 			using f = std::is_same<T, U>;
 		};*/
+		/// \brief returns `true_` is the dynamic input and the fixed input parameters are the same type
 		template <typename M, typename C = identity>
 		struct same_as {
 			template <typename T>

@@ -9,6 +9,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief results in the ::value of the first input patameter minus the second
 		template <typename C = identity>
 		struct minus {
 			template <typename A, typename B>

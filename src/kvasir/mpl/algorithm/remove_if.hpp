@@ -26,6 +26,7 @@ namespace kvasir {
 				using f = list<>;
 			};
 		} // namespace detail
+		/// \exclude
 		template <typename F>
 		struct list_wrap_if {
 			template <typename T>
@@ -37,6 +38,7 @@ namespace kvasir {
 			template <typename T>
 			using f = typename detail::list_wrap_if<F<T>::value>::template f<T>;
 		};
+		/// \exclude
 		template <typename F>
 		struct list_wrap_if_not {
 			template <typename T>

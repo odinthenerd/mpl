@@ -11,6 +11,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief remove the first element of the input pack
 		template <typename C = listify>
 		struct pop_front {
 			template <typename T, typename... Ts>

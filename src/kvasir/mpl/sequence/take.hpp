@@ -8,7 +8,7 @@
 #include "../algorithm/rotate.hpp"
 namespace kvasir {
 	namespace mpl {
-
+		/// \brief take the first N elements from a pack
 		template <typename N, typename C = listify>
 		struct take {
 			template <typename... Ts>

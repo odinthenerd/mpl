@@ -2193,12 +2193,14 @@ namespace kvasir {
 			};
 
 		} // namespace detail
+		/// \brief unpacks the elements of each list in the danamic input and concatinates them to one pack
 		template <typename C = listify>
 		struct join {
 			template <typename... Ts>
 			using f = typename detail::join_select<detail::select_join_size(
 			        sizeof...(Ts))>::template f<C::template f, Ts...>::type;
 		};
+		/// \exclude
 		template <template <typename...> class C>
 		struct join<cfe<C, identity>> {
 			template <typename... Ts>

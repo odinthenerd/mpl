@@ -9,6 +9,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief push the fixed input type to the back of the dynamic input pack
 		template <typename Input, typename C = listify>
 		struct push_back {
 			template <typename... Ts>

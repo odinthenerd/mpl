@@ -11,17 +11,20 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief results in uint_<sizeof...(unput_parameter_pack)>
 		template <typename C = identity>
 		struct size {
 			template <typename... Ts>
 			using f = typename C::template f<uint_<sizeof...(Ts)>>;
 		};
+		/// \exclude
 		template <>
 		struct size<identity> {
 			template <typename... Ts>
 			using f = uint_<sizeof...(Ts)>;
 		};
 
+		/// \brief difference between the size of the input aprameter pack and the ::value of the fixed input
 		/// offset provides the difference between the origional length of a list
 		///(provided as the input parameter) and the pack supplied to f
 		template <typename T, typename C = identity>
@@ -29,6 +32,7 @@ namespace kvasir {
 			template <typename... Ts>
 			using f = typename C::template f<uint_<(T::value - sizeof...(Ts))>>;
 		};
+		/// \exclude
 		template <typename T>
 		struct offset<T, identity> {
 			template <typename... Ts>

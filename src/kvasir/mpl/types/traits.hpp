@@ -679,7 +679,7 @@ namespace kvasir {
 		/// \brief returns the input type with const and volatile qualifiers stripped
 		/// \effects results in the input type with const and volatile qualifiers stripped
 		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
-		/// modified \notes this is the same as std::remove_cv except the return is `uint_<N>` and
+		/// modified \notes this is the same as std::remove_cv except it
 		/// may be faster/
 		template <typename C = identity>
 		struct remove_cv {
@@ -689,7 +689,7 @@ namespace kvasir {
 		/// \brief returns the input type with const qualifiers stripped
 		/// \effects results in the input type with const qualifiers stripped
 		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
-		/// modified \notes this is the same as std::remove_const except the return is `uint_<N>` and
+		/// modified \notes this is the same as std::remove_const except it
 		/// may be faster/
 		template <typename C = identity>
 		struct remove_const {
@@ -699,7 +699,7 @@ namespace kvasir {
 		/// \brief returns the input type with volatile qualifiers stripped
 		/// \effects results in the input type with volatile qualifiers stripped
 		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
-		/// modified \notes this is the same as std::remove_volatile except the return is `uint_<N>` and
+		/// modified \notes this is the same as std::remove_volatile except it
 		/// may be faster/
 		template <typename C = identity>
 		struct remove_volatile {
@@ -709,7 +709,7 @@ namespace kvasir {
 		/// \brief returns the input type with const and volatile qualifiers added
 		/// \effects results in the input type with const and volatile qualifiers added
 		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
-		/// modified \notes this is the same as std::add_cv except the return is `uint_<N>` and
+		/// modified \notes this is the same as std::add_cv except it
 		/// may be faster/
 		template <typename C = identity>
 		struct add_cv {
@@ -719,7 +719,7 @@ namespace kvasir {
 		/// \brief returns the input type with const qualifiers added
 		/// \effects results in the input type with const qualifiers added
 		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
-		/// modified \notes this is the same as std::add_comst except the return is `uint_<N>` and
+		/// modified \notes this is the same as std::add_comst except it
 		/// may be faster/
 		template <typename C = identity>
 		struct add_const {
@@ -729,7 +729,7 @@ namespace kvasir {
 		/// \brief returns the input type with volatile qualifiers added
 		/// \effects results in the input type with const qualifiers added
 		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
-		/// modified \notes this is the same as std::add_volatile except the return is `uint_<N>` and
+		/// modified \notes this is the same as std::add_volatile except it 
 		/// may be faster/
 		template <typename C = identity>
 		struct add_volatile {
@@ -741,11 +741,21 @@ namespace kvasir {
 			template <typename T>
 			using f = typename C::template f<typename std::remove_reference<T>::type>;
 		};
+		/// \brief returns the input type as an lvalue reference
+		/// \effects results in the input type as an lvalue reference
+		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
+		/// modified \notes this is the same as std::add_lvalue_reference except it
+		/// may be faster/
 		template <typename C = identity>
 		struct add_lvalue_reference {
 			template <typename T>
 			using f = typename C::template f<typename std::add_lvalue_reference<T>::type>;
 		};
+		/// \brief returns the input type as an rvalue reference
+		/// \effects results in the input type as an rvalue reference
+		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
+		/// modified \notes this is the same as std::add_volatile except it
+		/// may be faster/
 		template <typename C = identity>
 		struct add_rvalue_reference {
 			template <typename T>
@@ -756,6 +766,11 @@ namespace kvasir {
 			template <typename T>
 			using f = typename C::template f<typename std::remove_pointer<T>::type>;
 		};
+		/// \brief returns the input type with a pointer added
+		/// \effects results in the input type with a pointer added
+		/// \requires fixed parameters: optional continuation, dynamic parameters: the type to be
+		/// modified \notes this is the same as std::add_pointer except it
+		/// may be faster/
 		template <typename C = identity>
 		struct add_pointer {
 			template <typename T>
@@ -803,6 +818,7 @@ namespace kvasir {
 			template <typename T>
 			using f = typename C::template f<bool_<std::is_null_pointer<T>::value>>;
 		};
+		/// \exclude
 		template <>
 		struct is_null_pointer<identity> {
 			template <typename T>

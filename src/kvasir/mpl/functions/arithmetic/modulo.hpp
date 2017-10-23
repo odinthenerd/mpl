@@ -9,6 +9,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief results in the ::value of the first input modulo the second
 		template <typename C = identity>
 		struct modulo {
 			template <typename A, typename B>

@@ -9,11 +9,13 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief results in the first element in the input pack
 		template <typename C = identity>
 		struct front {
 			template <typename T, typename... Ts>
 			using f = typename C::template f<T>;
 		};
+		/// \exclude
 		template <>
 		struct front<identity> {
 			template <typename T, typename... Ts>

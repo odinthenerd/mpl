@@ -9,6 +9,7 @@
 
 namespace kvasir {
 	namespace mpl {
+		/// \brief add the ::value of the input patameters together
 		template <typename C = identity>
 		struct plus {
 			template <typename A, typename B>
